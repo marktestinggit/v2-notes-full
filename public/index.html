@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Medinote AI Assistant</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: auto; }
+    textarea { width: 100%; height: 200px; font-size: 16px; padding: 10px; margin-bottom: 20px; }
+    button { padding: 12px 24px; font-size: 16px; cursor: pointer; margin-right: 10px; }
+    #response { white-space: pre-wrap; background-color: #f9f9f9; padding: 20px; margin-top: 20px; border-radius: 6px; border: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+
+<h2>🩺 Medinote - AI Clinical Note Assistant</h2>
+<p>Enter your clinical notes below and click the button to let AI generate a SOAP summary and suggested treatment plan:</p>
+
+<textarea id="notes" placeholder="e.g. Patient reports abdominal pain for 3 days with associated fever..."></textarea><br>
+
+<button onclick="analyzeNote()">Analyze with AI</button>
+<button onclick="downloadNote()">Download Analysis</button>
+
+<div id="response"></div>
+
+<script>
+async function analyzeNote() {
+  const input = document.getElementById("notes").value;
+  const output = document.getElementById("response");
+  output.innerText = "⏳ Analyzing, please wait...";
+
+  try {
+    const res = await fetch("/api/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ content: input })
+    });
+
+    const data = await res.json();
+    output.innerText = data.output || "⚠️ No response returned. Please try again.";
+  } catch (error) {
+    console.error("Analysis error:", error);
+    output.innerText = "❌ Analysis failed. Please check your connection or try again later.";
+  }
+}
+
+function downloadNote() {
+  const content = document.getElementById("response").innerText;
+  if (!content || content.includes("Analysis failed") || content.includes("Analyzing")) {
+    alert("No analysis available for download. Please run the analysis first.");
+    return;
+  }
+
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Medinote_Analysis.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+
+</body>
+</html>
