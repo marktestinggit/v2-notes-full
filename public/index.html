@@ -2,67 +2,97 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Medinote AI Assistant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediNote AI Assistant</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: auto; }
-    textarea { width: 100%; height: 200px; font-size: 16px; padding: 10px; margin-bottom: 20px; }
-    button { padding: 12px 24px; font-size: 16px; cursor: pointer; margin-right: 10px; }
-    #response { white-space: pre-wrap; background-color: #f9f9f9; padding: 20px; margin-top: 20px; border-radius: 6px; border: 1px solid #ddd; }
+    body { font-family: 'Inter', sans-serif; }
+    .chat-box { 
+      border: 2px solid #e5e7eb; 
+      border-radius: 8px; 
+      padding: 8px; 
+      background: #f9fafb; 
+      max-width: 600px; 
+      margin: 0 auto; 
+    }
+    .chat-box textarea { 
+      width: 100%; 
+      border: none; 
+      background: transparent; 
+      resize: none; 
+      outline: none; 
+      padding: 8px; 
+      font-size: 16px; 
+    }
+    .output-box { 
+      border: 1px solid #e5e7eb; 
+      border-radius: 8px; 
+      padding: 16px; 
+      margin-top: 16px; 
+      max-width: 600px; 
+      margin-left: auto; 
+      margin-right: auto; 
+      white-space: pre-wrap; 
+    }
   </style>
 </head>
-<body>
+<body class="bg-gray-100">
+  <div class="max-w-4xl mx-auto p-4">
+    <h1 class="text-3xl font-bold text-center mb-6">🩺 MediNote</h1>
+    <p class="text-center text-gray-600 mb-8">Enter clinical notes to generate AI-powered SOAP notes, care plans, and referral letters.</p>
 
-<h2>🩺 Medinote - AI Clinical Note Assistant</h2>
-<p>Enter your clinical notes below and click the button to let AI generate a SOAP summary and suggested treatment plan:</p>
+    <div class="chat-box">
+      <textarea id="notes" rows="4" placeholder="e.g., Patient reports chest pain for 3 days; HbA1c 7.2%..." class="text-gray-800"></textarea>
+    </div>
 
-<textarea id="notes" placeholder="e.g. Patient reports abdominal pain for 3 days with associated fever..."></textarea><br>
+    <div class="text-center mt-4">
+      <button onclick="analyzeNote()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Analyze with AI</button>
+      <button onclick="downloadNote()" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700">Download Analysis</button>
+    </div>
 
-<button onclick="analyzeNote()">Analyze with AI</button>
-<button onclick="downloadNote()">Download Analysis</button>
+    <div id="response" class="output-box"></div>
+  </div>
 
-<div id="response"></div>
+  <script>
+    async function analyzeNote() {
+      const input = document.getElementById("notes").value;
+      const output = document.getElementById("response");
+      output.innerText = "⏳ Analyzing, please wait...";
 
-<script>
-async function analyzeNote() {
-  const input = document.getElementById("notes").value;
-  const output = document.getElementById("response");
-  output.innerText = "⏳ Analyzing, please wait...";
+      try {
+        const res = await fetch("/api/analyze", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ content: input })
+        });
 
-  try {
-    const res = await fetch("/api/analyze", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ content: input })
-    });
+        const data = await res.json();
+        output.innerText = data.output || "⚠️ No response returned. Please try again.";
+      } catch (error) {
+        console.error("Analysis error:", error);
+        output.innerText = "❌ Analysis failed. Please check your connection or try again later.";
+      }
+    }
 
-    const data = await res.json();
-    output.innerText = data.output || "⚠️ No response returned. Please try again.";
-  } catch (error) {
-    console.error("Analysis error:", error);
-    output.innerText = "❌ Analysis failed. Please check your connection or try again later.";
-  }
-}
+    function downloadNote() {
+      const content = document.getElementById("response").innerText;
+      if (!content || content.includes("Analysis failed") || content.includes("Analyzing")) {
+        alert("No analysis available for download. Please run the analysis first.");
+        return;
+      }
 
-function downloadNote() {
-  const content = document.getElementById("response").innerText;
-  if (!content || content.includes("Analysis failed") || content.includes("Analyzing")) {
-    alert("No analysis available for download. Please run the analysis first.");
-    return;
-  }
-
-  const blob = new Blob([content], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'Medinote_Analysis.txt';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-</script>
-
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Medinote_Analysis.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  </script>
 </body>
 </html>
